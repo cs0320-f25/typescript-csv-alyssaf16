@@ -22,12 +22,15 @@ export async function parseCSV<T>(path: string, schema?: ZodType<T>): Promise<st
     crlfDelay: Infinity,
   });
 
+  // If a schema is provided, parse rows into typed objects
   if (schema) {
     const result: T[] = [];
+    // Avoid type casting by having a for loop inside the if schema
     for await (const line of rl) {
       if (line.trim() === "") continue;
       const values = line.split(",").map((v) => v.trim());
       const parsed = schema.safeParse(values);
+      // If validation fails, throw an error
       if (!parsed.success) {
         throw new Error(`CSV row validation failed: ${JSON.stringify(parsed.error)}`);
       }
@@ -35,6 +38,7 @@ export async function parseCSV<T>(path: string, schema?: ZodType<T>): Promise<st
     }
     return result;
   } else {
+    // if there isn't a schema, return rows as string arrays
     const result: string[][] = [];
     for await (const line of rl) {
       if (line.trim() === "") continue;
