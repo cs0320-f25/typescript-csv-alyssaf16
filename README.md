@@ -78,7 +78,7 @@
 #### Team members and contributions (include cs logins):
 N/A
 #### Collaborators (cslogins of anyone you worked with on this project and/or generative AI):
-N/A
+I used generative AI to help generate test case ideas and give me examples of how to deal with schemas.
 #### Total estimated time it took to complete project:
 5 hours
 #### Link to GitHub Repo:  

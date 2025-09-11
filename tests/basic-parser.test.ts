@@ -70,7 +70,6 @@ test("parseCSV does not handle quoted fields properly", async () => {
 // });
 
 test("parseCSV handles rows with missing or extra columns", async () => {
-  const INCONSISTENT_CSV_PATH = path.join(__dirname, "../data/inconsistent.csv");
   const results = await parseCSV(INCONSISTENT_CSV_PATH);
   expect(results).toEqual([
     ["name", "age"],
@@ -169,3 +168,56 @@ test("parseCSV returns string[][] if schema is undefined", async () => {
   expect(results[1]).toEqual(["Alice", "23"]);
   expect(results[2]).toEqual(["Bob", "thirty"]);
 });
+
+// Supplemental 
+const exampleStackJSON = {
+  name: "numberStack",
+  elements: [10, 20, 30]
+};
+
+const StackSchema = z.object({
+  name: z.string(),
+  elements: z.array(z.number())
+});
+
+  test("empty elements array is allowed", () => {
+    const stack = {
+      name: "emptyStack",
+      elements: []
+    };
+    const parsed = StackSchema.safeParse(stack);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.elements).toHaveLength(0);
+    }
+  });
+
+  test("non-number in elements fails validation", () => {
+    const stack = {
+      name: "badStack",
+      elements: [10, "oops", 30]
+    };
+    const parsed = StackSchema.safeParse(stack);
+    expect(parsed.success).toBe(false);
+  });
+
+  test("missing name fails validation", () => {
+    const stack = {
+      elements: [1, 2, 3]
+    };
+    const parsed = StackSchema.safeParse(stack);
+    expect(parsed.success).toBe(false);
+  });
+
+  test("extra unknown field passes if strict mode is not enforced", () => {
+    const stack = {
+      name: "extraStack",
+      elements: [1, 2, 3],
+      description: "extra field"
+    };
+    const parsed = StackSchema.safeParse(stack);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.elements).toEqual([1, 2, 3]);
+    }
+  });
