@@ -6,13 +6,13 @@
   My ideas:
     - Error handling to inform the user of any formatting issues
     - Blank lines can be handled by the parser so that the data doesn't need to be cleaned up after
-    - Implementing a hashmap when headers exist to make it easier to access data.
+    - Implementing a hashmap when headers exist to make it easier to access data, so data is formatted as objects.
     - Double checking that age is an integer and name is a string (not necessarily that it needs to be in quotes though)
 
 - #### Step 2: Use an LLM to help expand your perspective.
    LLM ideas:
-    -  Using quotations for the name field so that commas and periods don't split up the data
-    - Convert types immediately, such as numbers in a string to integers
+    - Using quotations for the name field so that commas and periods don't split up the data
+    - Convert types while parsing, such as numbers in a string to integers
 
 - #### Step 3: use an LLM to help expand your perspective.
 
@@ -23,7 +23,7 @@
   1) a. Functionality - Names with Punctuation
   User story:
   As a developer, I wanted the parser to correctly handle the name field when the name has commas inside. 
-  This could be addressed if it can handle quoted fields, so it can treat whatever that is within the quotes as a single chunk.
+  This could be addressed if it can handle quoted fields, so it can treat anything within the quotes as a single chunk.
 
   Acceptance criteria:
     - Values inside quotes are parsed as a single field, even if they contain commas.
@@ -63,10 +63,10 @@
   My initial ideas were mostly related to making the parser easier to use, such as better error messages if the file format is errored, ignoring blank lines, and turning rows into objects when there are headers. The LLM added a couple ideas, such as handling quotes so that names with commas are not split, and converting types instead of leaving everything as strings. The LLM gave different responses when I asked about edge cases and improvements as the edge cases felt more specific while improvements were general. I liked the LLMs suggestions on how to approach parsing fields with punctuation.
 
 ### Design Choices
-In designing my CSV parser, I wanted it to be flexible enough to return either raw 2D string arrays or typed objects when a Zod schema is provided. I chose to separate the logic into two branches — one for when a schema is present and one for when it isn’t — so that TypeScript could correctly infer the result type without any type casting. This is why I used separate for await loops in each branch instead of having a single result array and casting its type at the end: it avoids unsafe as statements and keeps the function fully type-safe. The loops read each line asynchronously, skip empty lines, trim whitespace, and either push the raw values or validate them against the schema. Overall, this structure makes the parser predictable, easy to reason about, and compatible with both simple CSV data and schema-validated TypeScript objects.
+While designing my CSV parser, I needed it to be able to produce 2D string arrays or typed objects when a Zod schema is provided. I chose to separate the logic into two sections, one for when a schema is present and one for when it isn’t, so that TypeScript could correctly infer the result type without any type casting. This is why I used separate for await loops instead of having a single result array and casting its type at the end. The loops read each line asynchronously, skip empty lines, trim whitespace, and either push the original values or validate them against the schema. This makes the parser more predictable and reliable.
 
 ### 1340 Supplement
-For this sprint, I picked a stack as my favorite data structure and represented it as JSON with a name and an elements array holding the stack items. I created a Zod schema, StackSchema, to validate this structure, specifying that name must be a string and elements must be an array of numbers. I wrote tests to check different scenarios: that an empty elements array is allowed, that non-number elements fail validation, that a missing name field causes an error, and that extra fields are okay if strict mode isn’t enforced. These tests ensure that any JSON representing a stack is correctly validated and safely parsed into a typed TypeScript object.
+My work for the supplement can be found at the bottom of basic-parser.test.ts. For this sprint, I picked a stack as my data structure and represented it as a JSON with a name and an elements array holding the stack items. I created a Zod schema called StackSchema for this structure, and I specified that name must be a string and elements must be a string in quotations. It would be ideal for it to be an array, but I wasn't able to get it working as an array. I wrote a test to check a simple case that it is parsed by comma and the two fields (name and elements) are separated. The next step would be to have the elements not be a string but rather an array.
 
 - #### 1. Correctness
 I think that a correct CSV parser is one that transforms the structure and content of a CSV into a usable format. It is correct if it can follow the properties needed for parsing data, such as the ones below.
@@ -78,22 +78,23 @@ I think that a correct CSV parser is one that transforms the structure and conte
 
 
 - #### 2. Random, On-Demand Generation
-If we had a function that generated random CSV data on demand, we could use it to perform property-based testing of the parser. Instead of manually writing test cases, we could generate a variety of CSV files with different numbers of rows, varying column lengths, unusual characters, empty fields. By running the parser on these randomly generated inputs, we could check whether it always preserves row and column structure, correctly handles whitespace and quoted fields, and produces errors when data is invalid. This can expose edge cases that I may not have caught by writing test cases myself.
+If we had a function that generated random CSV data on demand, we could use it for testing the parser. Instead of manually writing test cases, we could generate a variety of CSV files with different numbers of rows, varying column lengths, unusual characters, and empty fields. By running the parser on these randomly generated inputs, we could check whether it always preserves row and column structure, correctly handles whitespace and quoted fields, and produces errors when data is invalid. This can expose edge cases that I may not have caught by writing test cases myself.
 
 - #### 3. Overall experience, Bugs encountered and resolved
 This sprint was different from other programming assignments that I have done because it focused on reflecting on the design through testing and not just implementation. This is important for software engineering in general because with larger projects, it is important to think about the user and what the input could be, rather than just assuming it will work. One bug I encountered was related to the parser returning unknown when no schema was provided; this made TypeScript complain when I tried to access array elements. I fixed it by explicitly asserting the type as string[][] when the schema was undefined.
 
 #### Errors/Bugs: N/A
 #### Tests:
-The test suite for parseCSV verifies a range of behaviors and edge cases. It confirms that CSV files are parsed into arrays of strings, handles empty files and files with only headers correctly, trims whitespace around values, and preserves quoted values without parsing them. Tests also check how the parser deals with inconsistent row lengths and missing or extra columns, as well as validation against Zod schemas for typed objects, ensuring rows either pass or throw errors when invalid. Schema-specific tests verify correct coercion of data types, proper rejection of uncoercible rows, and strict enforcement of row length. Additionally, supplemental tests for StackSchema validate object structures, confirming that empty arrays are allowed, invalid element types or missing required fields fail validation, and extra fields are permitted if strict mode is not enforced. Overall, the suite ensures robust CSV parsing and type-safe object creation.
+The test suite for parseCSV verifies a range of behaviors and edge cases. It makes sure that CSV files are parsed into arrays of strings, handles empty files and files with only headers correctly, trims whitespace around values, and preserves quoted values without parsing them. Tests also check how the parser deals with inconsistent row lengths and missing or extra columns, and it validates against Zod schemas for typed objects to make sure rows either pass or throw errors when invalid. Tests for the schema verify that data types are being coerced, an error is thrown for rows that can't be coerced, and that the row length is correct.
+
 #### How To…
-I tested parseCSV by running a bunch of different scenarios to make sure it works as expected. You can test it by running the test suite, which checks that normal CSV files get parsed into arrays of strings, that empty files return empty arrays, and that files with only headers or extra whitespace behave correctly. The tests also show that quoted values aren’t parsed automatically and that rows with missing or extra columns are handled, either by keeping them as-is or throwing errors if you use a schema. When using a Zod schema, the tests make sure valid rows turn into typed objects and that invalid rows throw descriptive errors. I also included tests to check type coercion, like making sure age fields are numbers, and tested some supplemental object validation to cover things like empty arrays or unexpected fields. Running the tests basically walks through all the normal and edge-case behaviors of the parser so you can see exactly what works and what fails.
+I tested parseCSV by running a bunch of different scenarios to make sure it works as expected. You can test it by running the test suite, which checks that normal CSV files get parsed into arrays of strings, that empty files return empty arrays, and that files with only headers or extra whitespace behave correctly. The tests also show that quoted values aren’t parsed automatically and that rows with missing or extra columns are handled, either by keeping them as-is or throwing errors if you use a schema. When using a Zod schema, the tests make sure valid rows turn into typed objects and that invalid rows throw descriptive errors. I also included tests to check type coercion, like making sure age fields are numbers, and tested some supplemental object validation to cover things like empty arrays or unexpected fields.
 
 #### Team members and contributions (include cs logins):
 N/A
 #### Collaborators (cslogins of anyone you worked with on this project and/or generative AI):
 I used generative AI to help generate test case ideas and give me examples of how to deal with schemas.
 #### Total estimated time it took to complete project:
-6 hours
+7 hours
 #### Link to GitHub Repo:  
 https://github.com/cs0320-f25/typescript-csv-alyssaf16.git

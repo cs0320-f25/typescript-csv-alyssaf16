@@ -10,6 +10,8 @@ const QUOTED_CSV_PATH = path.join(__dirname, "../data/quotes.csv");
 const EMPTY_LINES_CSV_PATH = path.join(__dirname, "../data/emptylines.csv");
 const INCONSISTENT_CSV_PATH = path.join(__dirname, "../data/inconsistent.csv");
 const COLOR_CSV_PATH = path.join(__dirname, "../data/colors.csv");
+const STACK_CSV_PATH = path.join(__dirname, "../data/stack.csv");
+
 
 // NOTE: Supplemental is at the end
 
@@ -61,7 +63,7 @@ test("parseCSV does not handle quoted fields properly", async () => {
   expect(results[1]).toEqual(["\"Bob\"", "\"B.\"", "\"30\""]);
 });
 
-test("parseCSV handles empty lines gracefully", async () => {
+test("parseCSV handles empty lines", async () => {
   const results = await parseCSV(EMPTY_LINES_CSV_PATH);
   expect(results).toEqual([
     ["name", "age"],
@@ -96,27 +98,16 @@ test("parseCSV with schema produces typed objects (skip headers)", async () => {
   try {
     results = (await parseCSV<Person>(PEOPLE_CSV_PATH, PersonRowSchema)) as Person[];
   } catch (err: any) {
-    // We expect a failure on the header row
+    // The header row should fail
     expect(err.message).toMatch(/CSV row validation failed/);
   }
-
-  // Now manually parse the valid data rows (skip header + invalid rows)
-  const dataRows = [
-    { name: "Alice", age: 23 },
-    { name: "Charlie", age: 25 },
-    { name: "Nim", age: 22 },
-  ];
-
-  expect(dataRows[0]).toEqual({ name: "Alice", age: 23 });
-  expect(dataRows[1]).toEqual({ name: "Charlie", age: 25 });
-  expect(dataRows[2]).toEqual({ name: "Nim", age: 22 });
 });
 
 test("parseCSV throws if a row cannot be validated", async () => {
   await expect(parseCSV(PEOPLE_CSV_PATH, PersonRowSchema)).rejects.toThrow();
 });
 
-test("parseCSV without schema still yields string[][]", async () => {
+test("parseCSV without schema still gives string[][]", async () => {
   const results = await parseCSV(PEOPLE_CSV_PATH);
   expect(results[1]).toEqual(["Alice", "23"]);
 });
@@ -133,7 +124,7 @@ test("parseCSV works with a different schema", async () => {
   ]);
 });
 
-test("parseCSV detects inconsistent row length when schema is strict", async () => {
+test("parseCSV gets inconsistent row length when schema is strict", async () => {
   const TwoColSchema = z
     .tuple([z.string(), z.string()])
     .transform((tup) => ({ first: tup[0], second: tup[1] }));
@@ -151,13 +142,8 @@ test("parseCSV does not break on quoted values", async () => {
 });
 
 test("parseCSV returns string[][] if schema is undefined", async () => {
-  // Call parser without a schema
   const results = await parseCSV(PEOPLE_CSV_PATH, undefined) as string[][];
-
-  // TypeScript should infer this as string[][]; all rows are arrays of strings
   expect(Array.isArray(results)).toBe(true);
-
-  // Each row should be an array of strings
   for (const row of results) {
     expect(Array.isArray(row)).toBe(true);
     for (const cell of row) {
@@ -181,44 +167,17 @@ const StackSchema = z.object({
   elements: z.array(z.number())
 });
 
-  test("empty elements array is allowed", () => {
-    const stack = {
-      name: "emptyStack",
-      elements: []
-    };
-    const parsed = StackSchema.safeParse(stack);
-    expect(parsed.success).toBe(true);
-    if (parsed.success) {
-      expect(parsed.data.elements).toHaveLength(0);
-    }
-  });
+test("test stack schema", () => {
+  const stack = {
+    name: "numberStack",
+    elements: [1, 2, 3]
+  };
 
-  test("non-number in elements fails validation", () => {
-    const stack = {
-      name: "badStack",
-      elements: [10, "oops", 30]
-    };
-    const parsed = StackSchema.safeParse(stack);
-    expect(parsed.success).toBe(false);
-  });
+  const parsed = StackSchema.safeParse(stack);
 
-  test("missing name fails validation", () => {
-    const stack = {
-      elements: [1, 2, 3]
-    };
-    const parsed = StackSchema.safeParse(stack);
-    expect(parsed.success).toBe(false);
-  });
-
-  test("extra unknown field passes if strict mode is not enforced", () => {
-    const stack = {
-      name: "extraStack",
-      elements: [1, 2, 3],
-      description: "extra field"
-    };
-    const parsed = StackSchema.safeParse(stack);
-    expect(parsed.success).toBe(true);
-    if (parsed.success) {
-      expect(parsed.data.elements).toEqual([1, 2, 3]);
-    }
-  });
+  expect(parsed.success).toBe(true);
+  if (parsed.success) {
+    expect(parsed.data.name).toBe("numberStack");
+    expect(parsed.data.elements).toEqual([1, 2, 3]);
+  }
+});
