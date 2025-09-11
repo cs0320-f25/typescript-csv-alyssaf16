@@ -16,55 +16,57 @@
 
 - #### Step 3: use an LLM to help expand your perspective.
 
-    Include a list of the top 4 enhancements or edge cases you think are most valuable to explore in the next week’s sprint. Label them clearly by category (extensibility vs. functionality), and include whether they came from you, the LLM, or both. Describe these using the User Story format—see below for a definition. 
+  Include a list of the top 4 enhancements or edge cases you think are most valuable to explore in the next week’s sprint. Label them clearly by category (extensibility vs. functionality), and include whether they came from you, the LLM, or both. Describe these using the User Story format—see below for a definition. 
 
-    Include your notes from above: what were your initial ideas, what did the LLM suggest, and how did the results differ by prompt? What resonated with you, and what didn’t? (3-5 sentences.) 
+  Include your notes from above: what were your initial ideas, what did the LLM suggest, and how did the results differ by prompt? What resonated with you, and what didn’t? (3-5 sentences.) 
 
-    1) a. Functionality - Names with Punctuation
-    User story:
-    As a developer, I wanted the parser to correctly handle the name field when the name has commas inside. 
-    This could be addressed if it can handle quoted fields, so it can treat whatever that is within the quotes as a single chunk.
+  1) a. Functionality - Names with Punctuation
+  User story:
+  As a developer, I wanted the parser to correctly handle the name field when the name has commas inside. 
+  This could be addressed if it can handle quoted fields, so it can treat whatever that is within the quotes as a single chunk.
 
-    Acceptance criteria:
-       - Values inside quotes are parsed as a single field, even if they contain commas.
-       - Empty quotes inside a field are preserved correctly
+  Acceptance criteria:
+    - Values inside quotes are parsed as a single field, even if they contain commas.
+    - Empty quotes inside a field are preserved correctly
 
-    Source: Me & LLM
+  Source: Me & LLM
 
-    b. Extensibility - Return object instead of array when headers are available
-    User story:
-    As a developer, I want the parser to be able to use the first row as headers so that each row can be returned as an object instead.
+  b. Extensibility - Return object instead of array when headers are available
+  User story:
+  As a developer, I want the parser to be able to use the first row as headers so that each row can be returned as an object instead.
 
-    Acceptance criteria:
-    - When headers are used, rows are returned as objects with the key of header names, such as {name: "Alice", age: "30"}.
-    - When headers are not used, rows are array of strings
+  Acceptance criteria:
+  - When headers are used, rows are returned as objects with the key of header names, such as {name: "Alice", age: "30"}.
+  - When headers are not used, rows are array of strings
 
-    Source: Me
+  Source: Me
 
-    c. Extensibility - Handling errors and messaging
-    User story:
-    As a developer, I want there to be clear error handling and validation so that I can have clear messaging about how to deal with incorrectly formatted rows.
+  c. Extensibility - Handling errors and messaging
+  User story:
+  As a developer, I want there to be clear error handling and validation so that I can have clear messaging about how to deal with incorrectly formatted rows.
 
-    Acceptance criteria:
-    - If the file path is invalid, return an error message
-    - If the row has the wrong number of columns or missing a piece of information, it should be skipped over or set to null.
+  Acceptance criteria:
+  - If the file path is invalid, return an error message
+  - If the row has the wrong number of columns or missing a piece of information, it should be skipped over or set to null.
 
-    Source: Me + LLM
+  Source: Me + LLM
 
-    d. Functionality - skip empty lines
-    User story:
-    As a developer, I want the parser to ignore empty lines so that I don't have to manually clean the input file.
+  d. Functionality - skip empty lines
+  User story:
+  As a developer, I want the parser to ignore empty lines so that I don't have to manually clean the input file.
 
-    Acceptance criteria:
-    - Empty lines are skipped automatically
+  Acceptance criteria:
+  - Empty lines are skipped automatically
 
-    Source: Me
+  Source: Me
 
-    My initial ideas were mostly related to making the parser easier to use, such as better error messages if the file format is errored, ignoring blank lines, and turning rows into objects when there are headers. The LLM added a couple ideas, such as handling quotes so that names with commas are not split, and converting types instead of leaving everything as strings. The LLM gave different responses when I asked about edge cases and improvements as the edge cases felt more specific while improvements were general. I liked the LLMs suggestions on how to approach parsing fields with punctuation.
+  My initial ideas were mostly related to making the parser easier to use, such as better error messages if the file format is errored, ignoring blank lines, and turning rows into objects when there are headers. The LLM added a couple ideas, such as handling quotes so that names with commas are not split, and converting types instead of leaving everything as strings. The LLM gave different responses when I asked about edge cases and improvements as the edge cases felt more specific while improvements were general. I liked the LLMs suggestions on how to approach parsing fields with punctuation.
 
 ### Design Choices
+In designing my CSV parser, I wanted it to be flexible enough to return either raw 2D string arrays or typed objects when a Zod schema is provided. I chose to separate the logic into two branches — one for when a schema is present and one for when it isn’t — so that TypeScript could correctly infer the result type without any type casting. This is why I used separate for await loops in each branch instead of having a single result array and casting its type at the end: it avoids unsafe as statements and keeps the function fully type-safe. The loops read each line asynchronously, skip empty lines, trim whitespace, and either push the raw values or validate them against the schema. Overall, this structure makes the parser predictable, easy to reason about, and compatible with both simple CSV data and schema-validated TypeScript objects.
 
 ### 1340 Supplement
+For this sprint, I picked a stack as my favorite data structure and represented it as JSON with a name and an elements array holding the stack items. I created a Zod schema, StackSchema, to validate this structure, specifying that name must be a string and elements must be an array of numbers. I wrote tests to check different scenarios: that an empty elements array is allowed, that non-number elements fail validation, that a missing name field causes an error, and that extra fields are okay if strict mode isn’t enforced. These tests ensure that any JSON representing a stack is correctly validated and safely parsed into a typed TypeScript object.
 
 - #### 1. Correctness
 I think that a correct CSV parser is one that transforms the structure and content of a CSV into a usable format. It is correct if it can follow the properties needed for parsing data, such as the ones below.
@@ -92,6 +94,6 @@ N/A
 #### Collaborators (cslogins of anyone you worked with on this project and/or generative AI):
 I used generative AI to help generate test case ideas and give me examples of how to deal with schemas.
 #### Total estimated time it took to complete project:
-5 hours
+6 hours
 #### Link to GitHub Repo:  
 https://github.com/cs0320-f25/typescript-csv-alyssaf16.git

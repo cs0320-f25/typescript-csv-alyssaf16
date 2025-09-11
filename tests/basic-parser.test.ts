@@ -11,6 +11,8 @@ const EMPTY_LINES_CSV_PATH = path.join(__dirname, "../data/emptylines.csv");
 const INCONSISTENT_CSV_PATH = path.join(__dirname, "../data/inconsistent.csv");
 const COLOR_CSV_PATH = path.join(__dirname, "../data/colors.csv");
 
+// NOTE: Supplemental is at the end
+
 const PersonRowSchema = z
   .tuple([z.string(), z.coerce.number()])
   .transform((tup) => ({ name: tup[0], age: tup[1] }));
@@ -59,15 +61,14 @@ test("parseCSV does not handle quoted fields properly", async () => {
   expect(results[1]).toEqual(["\"Bob\"", "\"B.\"", "\"30\""]);
 });
 
-// test("parseCSV handles empty lines gracefully", async () => {
-//   const results = await parseCSV(EMPTY_LINES_CSV_PATH);
-//   expect(results).toEqual([
-//     ["name", "age"],
-//     ["Alice", "23"],
-//     [""],
-//     ["Bob", "thirty"]
-//   ]);
-// });
+test("parseCSV handles empty lines gracefully", async () => {
+  const results = await parseCSV(EMPTY_LINES_CSV_PATH);
+  expect(results).toEqual([
+    ["name", "age"],
+    ["Alice", "23"],
+    ["Bob", "thirty"]
+  ]);
+});
 
 test("parseCSV handles rows with missing or extra columns", async () => {
   const results = await parseCSV(INCONSISTENT_CSV_PATH);
@@ -169,7 +170,7 @@ test("parseCSV returns string[][] if schema is undefined", async () => {
   expect(results[2]).toEqual(["Bob", "thirty"]);
 });
 
-// Supplemental 
+// Supplemental
 const exampleStackJSON = {
   name: "numberStack",
   elements: [10, 20, 30]
