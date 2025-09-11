@@ -67,10 +67,20 @@
 ### 1340 Supplement
 
 - #### 1. Correctness
+I think that a correct CSV parser is one that transforms the structure and content of a CSV into a usable format. It is correct if it can follow the properties needed for parsing data, such as the ones below.
+- The parser should be able to identify and use any delimiters, such as commas or semicolons to separate fields. It should not misinterpret it as part of a field.
+- It should be able to handle whether they are within other quotes or contain delimiters.
+- It should be able to handle blank spaces, empty fields, or extra spaces
+- It should handle whether or not there are headers
+- It should be able to handle errors, such as if there are too many values in a column and provide feedback to the user.
+
 
 - #### 2. Random, On-Demand Generation
+If we had a function that generated random CSV data on demand, we could use it to perform property-based testing of the parser. Instead of manually writing test cases, we could generate a variety of CSV files with different numbers of rows, varying column lengths, unusual characters, empty fields. By running the parser on these randomly generated inputs, we could check whether it always preserves row and column structure, correctly handles whitespace and quoted fields, and produces errors when data is invalid. This can expose edge cases that I may not have caught by writing test cases myself.
 
 - #### 3. Overall experience, Bugs encountered and resolved
+This sprint was different from other programming assignments that I have done because it focused on reflecting on the design through testing and not just implementation. This is important for software engineering in general because with larger projects, it is important to think about the user and what the input could be, rather than just assuming it will work. One bug I encountered was related to the parser returning unknown when no schema was provided; this made TypeScript complain when I tried to access array elements. I fixed it by explicitly asserting the type as string[][] when the schema was undefined.
+
 #### Errors/Bugs:
 #### Tests:
 #### How To…
