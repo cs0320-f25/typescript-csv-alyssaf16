@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as readline from "readline";
-import { ZodType, ZodError } from "zod";
+import { ZodType } from "zod";
 
 /**
  * This is a JSDoc comment. Similar to JavaDoc, it documents a public-facing
