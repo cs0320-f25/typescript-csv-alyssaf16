@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as readline from "readline";
-import { ZodType } from "zod";
+import { z } from "zod";
 
 /**
  * This is a JSDoc comment. Similar to JavaDoc, it documents a public-facing
@@ -15,15 +15,14 @@ import { ZodType } from "zod";
  * @param path The path to the file being loaded.
  * @returns a "promise" to produce a 2-d array of cell values
  */
-export async function parseCSV<T>(path: string, schema?: ZodType<T>): Promise<T[] | string[][]> {
+// zodsaferparsesuccess, zodsafeparseerror
+export async function parseCSV<T>(path: string, schema?: z.ZodType<T>): Promise<T[] | string[][] | z.ZodError<T>> {
   const fileStream = fs.createReadStream(path);
   const rl = readline.createInterface({
     input: fileStream,
     crlfDelay: Infinity,
   });
 
-    // If a schema is provided, parse rows into typed objects
-  
   // If a schema is provided, parse rows into typed objects
   if (schema) {
     const result: T[] = [];
@@ -34,7 +33,7 @@ export async function parseCSV<T>(path: string, schema?: ZodType<T>): Promise<T[
       const parsed = schema.safeParse(values);
       // If validation fails, throw an error
       if (!parsed.success) {
-        throw new Error(`CSV row validation failed: ${JSON.stringify(parsed.error)}`);
+        return parsed.error
       }
       result.push(parsed.data);
     }

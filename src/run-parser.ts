@@ -1,4 +1,5 @@
 import { parseCSV } from "./basic-parser";
+import { z } from "zod";
 
 /*
   Example of how to run the parser outside of a test suite.
@@ -12,10 +13,12 @@ async function main() {
 
   // Notice the difference between "of" and "in". One iterates over the entries, 
   // another iterates over the indexes only.
-  for(const record of results)
-    console.log(record)
-  for(const record in results)
-    console.log(record)
+  if (!(results instanceof z.ZodError)) {
+    for(const record of results)
+      console.log(record)
+    for(const record in results)
+      console.log(record)
+  }
 }
 
 main();

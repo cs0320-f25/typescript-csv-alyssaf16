@@ -10,7 +10,6 @@ const QUOTED_CSV_PATH = path.join(__dirname, "../data/quotes.csv");
 const EMPTY_LINES_CSV_PATH = path.join(__dirname, "../data/emptylines.csv");
 const INCONSISTENT_CSV_PATH = path.join(__dirname, "../data/inconsistent.csv");
 const COLOR_CSV_PATH = path.join(__dirname, "../data/colors.csv");
-const STACK_CSV_PATH = path.join(__dirname, "../data/stack.csv");
 
 
 // NOTE: Supplemental is at the end
@@ -28,18 +27,22 @@ type Color = z.infer<typeof ColorRowSchema>;
 test("parseCSV yields arrays", async () => {
   const results = await parseCSV(PEOPLE_CSV_PATH)
   
-  expect(results).toHaveLength(5);
-  expect(results[0]).toEqual(["name", "age"]);
-  expect(results[1]).toEqual(["Alice", "23"]);
-  expect(results[2]).toEqual(["Bob", "thirty"]); // why does this work? :(
-  expect(results[3]).toEqual(["Charlie", "25"]);
-  expect(results[4]).toEqual(["Nim", "22"]);
+  if (!(results instanceof z.ZodError)) {
+    expect(results).toHaveLength(5);
+    expect(results[0]).toEqual(["name", "age"]);
+    expect(results[1]).toEqual(["Alice", "23"]);
+    expect(results[2]).toEqual(["Bob", "thirty"]); // why does this work? :(
+    expect(results[3]).toEqual(["Charlie", "25"]);
+    expect(results[4]).toEqual(["Nim", "22"]);
+  }
 });
 
 test("parseCSV yields only arrays", async () => {
   const results = await parseCSV(PEOPLE_CSV_PATH)
-  for(const row of results) {
-    expect(Array.isArray(row)).toBe(true);
+  if (!(results instanceof z.ZodError)) {
+    for(const row of results) {
+      expect(Array.isArray(row)).toBe(true);
+    }
   }
 });
 
@@ -55,12 +58,16 @@ test("parseCSV handles CSV with only headers", async () => {;
 
 test("parseCSV trims whitespace around values", async () => {
   const results = await parseCSV(WHITESPACE_CSV_PATH);
-  expect(results[1]).toEqual(["Alice", "23"]);
+  if (!(results instanceof z.ZodError)) {
+    expect(results[1]).toEqual(["Alice", "23"]);
+  }
 });
 
 test("parseCSV does not handle quoted fields properly", async () => {
   const results = await parseCSV(QUOTED_CSV_PATH);
-  expect(results[1]).toEqual(["\"Bob\"", "\"B.\"", "\"30\""]);
+  if (!(results instanceof z.ZodError)) {
+    expect(results[1]).toEqual(["\"Bob\"", "\"B.\"", "\"30\""]);
+  }
 });
 
 test("parseCSV handles empty lines", async () => {
@@ -98,18 +105,25 @@ test("parseCSV with schema produces typed objects (skip headers)", async () => {
   try {
     results = (await parseCSV<Person>(PEOPLE_CSV_PATH, PersonRowSchema)) as Person[];
   } catch (err: any) {
-    // The header row should fail
     expect(err.message).toMatch(/CSV row validation failed/);
   }
 });
 
-test("parseCSV throws if a row cannot be validated", async () => {
-  await expect(parseCSV(PEOPLE_CSV_PATH, PersonRowSchema)).rejects.toThrow();
+test("parseCSV returns ZodError if a row cannot be validated", async () => {
+  const result = await parseCSV(PEOPLE_CSV_PATH, PersonRowSchema);
+
+  expect(result).toBeInstanceOf(z.ZodError);
+
+  const error = result as z.ZodError;
+  expect(error.issues[0].code).toBe("invalid_type");
+  expect(error.issues[0].message).toMatch(/expected number/);
 });
 
 test("parseCSV without schema still gives string[][]", async () => {
   const results = await parseCSV(PEOPLE_CSV_PATH);
-  expect(results[1]).toEqual(["Alice", "23"]);
+  if (!(results instanceof z.ZodError)) {
+    expect(results[1]).toEqual(["Alice", "23"]);
+  }
 });
 
 test("parseCSV works with a different schema", async () => {
@@ -129,16 +143,26 @@ test("parseCSV gets inconsistent row length when schema is strict", async () => 
     .tuple([z.string(), z.string()])
     .transform((tup) => ({ first: tup[0], second: tup[1] }));
 
-  await expect(parseCSV(INCONSISTENT_CSV_PATH, TwoColSchema)).rejects.toThrow();
+  const result = await parseCSV(INCONSISTENT_CSV_PATH, TwoColSchema);
+
+  expect(result).toBeInstanceOf(z.ZodError);
+
+  const error = result as z.ZodError;
+  expect(error.issues[0].code).toBe("invalid_type");
+  expect(error.issues[0].message).toMatch(/expected string/);
 });
 
-test("parseCSV throws if row cannot be coerced", async () => {
-  await expect(parseCSV<Person>(PEOPLE_CSV_PATH, PersonRowSchema)).rejects.toThrow(/CSV row validation failed/);
+test("parseCSV returns ZodError if row cannot be coerced", async () => {
+  const result = await parseCSV<Person>(PEOPLE_CSV_PATH, PersonRowSchema);
+  expect(result).toBeInstanceOf(z.ZodError);
+  expect((result as z.ZodError).message).toMatch(/Invalid input/);
 });
 
 test("parseCSV does not break on quoted values", async () => {
   const results = await parseCSV(QUOTED_CSV_PATH);
-  expect(results[0]).toEqual(["\"Alice\"", "\"A.\"", "\"23\""]);
+  if (!(results instanceof z.ZodError)) {
+    expect(results[0]).toEqual(["\"Alice\"", "\"A.\"", "\"23\""]);
+  }
 });
 
 test("parseCSV returns string[][] if schema is undefined", async () => {
